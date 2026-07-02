@@ -8,7 +8,8 @@ import {
   Globe2, 
   Mail, 
   Link,
-  Activity
+  Activity,
+  Mountain
 } from 'lucide-react';
 
 export default function App() {
@@ -29,27 +30,25 @@ export default function App() {
   }, [mouseX, mouseY]);
 
   useEffect(() => {
-    // Simulate terminal boot sequence
     const bootTimer = setTimeout(() => setBootPhase('compiling'), 300);
     const readyTimer = setTimeout(() => setBootPhase('ready'), 1500);
     return () => { clearTimeout(bootTimer); clearTimeout(readyTimer); };
   }, []);
 
-  // Footer Inversion Scroll
+  // Scroll Progress for Footer Inversion
   const { scrollYProgress } = useScroll();
-  // We want to flip colors at the very end of the scroll (e.g., last 10%)
   const footerBgColor = useTransform(scrollYProgress, [0.85, 0.95], ['#0a0a0a', '#ffffff']);
   const footerTextColor = useTransform(scrollYProgress, [0.85, 0.95], ['#ffffff', '#0a0a0a']);
 
   return (
-    <ReactLenis root>
+    <ReactLenis root options={{ lerp: 0.05, smoothWheel: true }}>
       <motion.div 
         style={{ backgroundColor: footerBgColor, color: footerTextColor }}
         className="min-h-screen font-sans overflow-x-hidden selection:bg-[#00ffcc] selection:text-black relative"
       >
         {/* CUSTOM CURSOR */}
         <motion.div
-          className="fixed top-0 left-0 w-6 h-6 rounded-full bg-white pointer-events-none z-[9999] mix-blend-difference hidden md:block flex items-center justify-center"
+          className="fixed top-0 left-0 w-6 h-6 rounded-full bg-white pointer-events-none z-[9999] mix-blend-difference hidden md:flex items-center justify-center"
           style={{
             x: mouseX,
             y: mouseY,
@@ -59,7 +58,6 @@ export default function App() {
           variants={{
             default: { scale: 1 },
             hover: { scale: 3 },
-            text: { scale: 0.5 },
           }}
           animate={cursorVariant}
           transition={{ type: 'spring', stiffness: 500, damping: 28, mass: 0.5 }}
@@ -75,9 +73,9 @@ export default function App() {
               animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
             >
-              <HeroSection setCursorVariant={setCursorVariant} />
-              <VentureGrid setCursorVariant={setCursorVariant} />
-              <BookAndTelemetry setCursorVariant={setCursorVariant} />
+              <HeroParallax setCursorVariant={setCursorVariant} />
+              <VentureParallax setCursorVariant={setCursorVariant} />
+              <TerrainAndBook setCursorVariant={setCursorVariant} />
               <CapabilityBento setCursorVariant={setCursorVariant} />
               <FooterSection setCursorVariant={setCursorVariant} />
             </motion.div>
@@ -123,60 +121,91 @@ function BootSequence() {
 }
 
 // ---------------------------------------------------------------------------------
-// 2. HERO SECTION
+// 2. HERO PARALLAX SECTION (Cinematic Volcanoes)
 // ---------------------------------------------------------------------------------
-function HeroSection({ setCursorVariant }: any) {
+function HeroParallax({ setCursorVariant }: any) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
   return (
     <section 
-      className="relative w-full min-h-screen flex items-center justify-center overflow-hidden"
-      onMouseEnter={() => setCursorVariant('default')}
+      ref={ref}
+      className="relative w-full h-[150vh] bg-black"
     >
-      {/* Abstract Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
-      
-      {/* 3D Focal Asset Placeholder / Abstract Particle Node */}
-      <motion.div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full border border-gray-800/50"
-        animate={{ rotate: 360, scale: [1, 1.05, 1] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      >
-        <div className="absolute inset-0 rounded-full border border-[#00ffcc]/10 blur-[1px] transform rotate-45"></div>
-        <div className="absolute inset-4 rounded-full border border-blue-500/10 blur-[2px] transform -rotate-12"></div>
-      </motion.div>
+      {/* Sticky Container for the Image & Title */}
+      <div className="sticky top-0 w-full h-screen overflow-hidden flex flex-col justify-center">
+        
+        {/* Parallax Background Image */}
+        <motion.div 
+          style={{ y, scale }}
+          className="absolute inset-0 w-full h-full"
+        >
+          <div className="absolute inset-0 bg-black/60 z-10" /> {/* Dark overlay */}
+          <img 
+            src="/volcano.png" 
+            alt="Rwandan Volcanic Peaks" 
+            className="w-full h-full object-cover opacity-80"
+          />
+        </motion.div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pointer-events-none">
-        <motion.h1 
-          className="text-6xl md:text-8xl lg:text-[10rem] font-black tracking-tighter leading-[0.8] mb-8 mix-blend-difference"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
-          onMouseEnter={() => setCursorVariant('hover')}
-          onMouseLeave={() => setCursorVariant('default')}
+        {/* Foreground Content */}
+        <motion.div 
+          style={{ opacity }}
+          className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pointer-events-none mt-24"
         >
-          IDDI <br /> RUGERO <span className="text-[#00ffcc] text-4xl md:text-6xl">//</span>
-        </motion.h1>
-        <motion.p 
-          className="max-w-2xl text-lg md:text-xl text-gray-300 font-light leading-relaxed mix-blend-difference"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.6 }}
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1.2, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
+          >
+            <h1 
+              className="text-6xl md:text-8xl lg:text-[12rem] font-black tracking-tighter leading-[0.8] mb-8 text-white drop-shadow-2xl mix-blend-screen"
+              onMouseEnter={() => setCursorVariant('hover')}
+              onMouseLeave={() => setCursorVariant('default')}
+            >
+              IDDI <br /> RUGERO
+            </h1>
+            <div className="max-w-2xl text-lg md:text-2xl text-gray-200 font-light leading-relaxed drop-shadow-md">
+              <span className="font-bold text-[#00ffcc]">SYSTEMS & OPERATIONS.</span><br/>
+              I engineer automated data pipelines, manage cross-border financial operations, and design scalable business frameworks.<br/><br/>
+              <span className="italic flex items-center gap-2 text-white">
+                <Mountain size={20} className="text-[#00ffcc]" />
+                Conquered all 5 Volcanoes of Rwanda. Endurance Hiker.
+              </span>
+            </div>
+          </motion.div>
+        </motion.div>
+        
+        {/* Scroll Indicator */}
+        <motion.div 
+          style={{ opacity }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-[#00ffcc]"
         >
-          <span className="font-semibold text-white">SYSTEMS & OPERATIONS.</span> I engineer automated data pipelines, manage cross-border financial operations, and design scalable business frameworks. Off-screen, I test my own constraints against the elements.
-        </motion.p>
+          <span className="font-mono text-xs uppercase tracking-widest">Scroll Sequence</span>
+          <motion.div 
+            animate={{ y: [0, 10, 0] }} 
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-[1px] h-12 bg-gradient-to-b from-[#00ffcc] to-transparent"
+          />
+        </motion.div>
       </div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------------
-// 3. VENTURE ACCORDION
+// 3. VENTURE PARALLAX (Data Pipeline Background)
 // ---------------------------------------------------------------------------------
-function VentureGrid({ setCursorVariant }: any) {
-  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+function VentureParallax({ setCursorVariant }: any) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
 
-  const toggleAccordion = (index: number) => {
-    setActiveAccordion(activeAccordion === index ? null : index);
-  };
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+  const toggleAccordion = (index: number) => setActiveAccordion(activeAccordion === index ? null : index);
 
   const experiences = [
     {
@@ -202,72 +231,73 @@ function VentureGrid({ setCursorVariant }: any) {
   ];
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-10">
-      <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-500">Venture Architecture</h3>
-      <motion.div layout className="flex flex-col border-t border-gray-800">
-        <AnimatePresence>
-          {experiences.map((exp, idx) => (
-            <motion.div 
-              layout
-              key={idx} 
-              className="border-b border-gray-800 overflow-hidden"
-            >
-              <motion.button
-                layout
-                onClick={() => toggleAccordion(idx)}
-                onMouseEnter={() => setCursorVariant('hover')}
-                onMouseLeave={() => setCursorVariant('default')}
-                className="w-full flex items-center justify-between py-8 text-left hover:text-[#00ffcc] transition-colors"
-              >
-                <div>
-                  <h4 className="text-xl md:text-3xl font-medium tracking-tight">{exp.title}</h4>
-                  <span className="text-sm mt-2 block font-mono text-gray-500">{exp.meta}</span>
-                </div>
-                <motion.div 
-                  animate={{ rotate: activeAccordion === idx ? 180 : 0 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                >
-                  <ChevronDown size={28} />
-                </motion.div>
-              </motion.button>
-              
-              <AnimatePresence>
-                {activeAccordion === idx && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pb-8 pt-2 pr-8 md:w-2/3 text-lg text-gray-300 font-light leading-relaxed">
-                      {exp.content}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+    <section ref={ref} className="relative w-full py-32 overflow-hidden bg-[#0a0a0a]">
+      {/* Background Parallax */}
+      <motion.div style={{ y }} className="absolute inset-0 w-full h-[140%] -top-[20%] opacity-20 pointer-events-none">
+        <img src="/data.png" alt="Data Pipeline" className="w-full h-full object-cover mix-blend-screen" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
       </motion.div>
+
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-400">Venture Architecture</h3>
+        <motion.div layout className="flex flex-col border-t border-gray-800">
+          <AnimatePresence>
+            {experiences.map((exp, idx) => (
+              <motion.div layout key={idx} className="border-b border-gray-800 overflow-hidden">
+                <motion.button
+                  layout
+                  onClick={() => toggleAccordion(idx)}
+                  onMouseEnter={() => setCursorVariant('hover')}
+                  onMouseLeave={() => setCursorVariant('default')}
+                  className="w-full flex items-center justify-between py-10 text-left hover:text-[#00ffcc] transition-colors group"
+                >
+                  <div>
+                    <h4 className="text-2xl md:text-5xl font-black tracking-tighter uppercase">{exp.title}</h4>
+                    <span className="text-sm mt-3 block font-mono text-gray-400 group-hover:text-gray-300 transition-colors">{exp.meta}</span>
+                  </div>
+                  <motion.div animate={{ rotate: activeAccordion === idx ? 180 : 0 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }}>
+                    <ChevronDown size={36} />
+                  </motion.div>
+                </motion.button>
+                
+                <AnimatePresence>
+                  {activeAccordion === idx && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pb-10 pt-4 pr-8 md:w-3/4 text-xl md:text-2xl text-gray-300 font-light leading-relaxed">
+                        {exp.content}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      </div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------------
-// 4. BOOK CASE & TELEMETRY
+// 4. BOOK CASE & TELEMETRY (Image Masking Reveal)
 // ---------------------------------------------------------------------------------
-function BookAndTelemetry({ setCursorVariant }: any) {
+function TerrainAndBook({ setCursorVariant }: any) {
   // 3D Tilt for Book Case
-  const ref = useRef<HTMLDivElement>(null);
+  const bookRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useSpring(useTransform(y, [-100, 100], [15, -15]), { stiffness: 300, damping: 30 });
   const rotateY = useSpring(useTransform(x, [-100, 100], [-15, 15]), { stiffness: 300, damping: 30 });
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
+    if (!bookRef.current) return;
+    const rect = bookRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     x.set(e.clientX - centerX);
@@ -277,11 +307,17 @@ function BookAndTelemetry({ setCursorVariant }: any) {
 
   const [activeHoverNode, setActiveHoverNode] = useState<string | null>(null);
 
+  // Scroll Reveal for Book Image Mask
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "center center"] });
+  const clipPath = useTransform(scrollYProgress, [0, 1], ["inset(100% 0 0 0)", "inset(0% 0 0 0)"]);
+
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-24">
-      {/* THE BOOK CASE */}
+    <section ref={containerRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 space-y-32 relative z-10 bg-[#0a0a0a]">
+      
+      {/* THE BOOK CASE - HIGH END REVEAL */}
       <motion.div 
-        ref={ref}
+        ref={bookRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onMouseEnter={() => setCursorVariant('hover')}
@@ -290,23 +326,31 @@ function BookAndTelemetry({ setCursorVariant }: any) {
       >
         <motion.div 
           style={{ rotateX, rotateY }}
-          className="w-full relative p-8 md:p-16 border border-gray-800 bg-[#0a0a0a] rounded-xl flex flex-col md:flex-row justify-between items-center gap-12 overflow-hidden shadow-2xl"
+          className="w-full relative min-h-[400px] border border-gray-800 rounded-xl flex flex-col md:flex-row justify-between items-center overflow-hidden shadow-2xl bg-black"
         >
-          <div className="absolute top-0 left-0 w-2 h-full bg-[#00ffcc]"></div>
-          <div className="max-w-2xl z-10">
+          {/* Masked Image Reveal */}
+          <motion.div style={{ clipPath }} className="absolute inset-0 w-full h-full opacity-40">
+            <img src="/book.png" alt="97 Business Ideas" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+          </motion.div>
+
+          <div className="absolute top-0 left-0 w-2 h-full bg-[#00ffcc] z-20"></div>
+          
+          <div className="max-w-2xl z-20 p-8 md:p-16">
             <div className="flex items-center gap-3 mb-4 text-[#00ffcc]">
               <BookOpen size={24} />
               <span className="text-sm font-bold tracking-widest uppercase">Publication</span>
             </div>
-            <h3 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter">97 Business Ideas</h3>
-            <p className="text-sm font-medium tracking-widest mb-6 text-gray-500 uppercase">Second Edition</p>
-            <p className="leading-relaxed text-gray-300 text-lg">
+            <h3 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-white drop-shadow-lg">97 Business Ideas</h3>
+            <p className="text-sm font-medium tracking-widest mb-6 text-gray-400 uppercase">Second Edition</p>
+            <p className="leading-relaxed text-gray-200 text-xl font-light drop-shadow-md">
               A structured analytical volume detailing validation methodologies and regional scale strategy for emerging market ventures. 
               Focuses on actionable systemic frameworks over theoretical business concepts.
             </p>
           </div>
-          <div className="flex-shrink-0 z-10">
-            <div className="w-48 h-64 bg-white text-black flex items-center justify-center text-center p-6 font-black tracking-tighter text-3xl shadow-2xl">
+          
+          <div className="flex-shrink-0 z-20 hidden md:block p-16">
+            <div className="w-48 h-64 border border-white/20 bg-black/50 backdrop-blur-md text-white flex items-center justify-center text-center p-6 font-black tracking-tighter text-3xl shadow-[0_0_50px_rgba(0,255,204,0.1)]">
               97<br/>BUSINESS<br/>IDEAS
             </div>
           </div>
@@ -321,10 +365,12 @@ function BookAndTelemetry({ setCursorVariant }: any) {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           
           {/* NYUNGWE MARATHON */}
-          <div className="p-8 border border-gray-800 bg-[#0a0a0a] relative overflow-hidden group">
+          <div className="p-8 border border-gray-800 bg-[#0d0d0d] relative overflow-hidden group">
             <div className="mb-8">
-              <h4 className="text-xl font-medium uppercase tracking-tight">Nyungwe Marathon 2026</h4>
-              <p className="text-sm text-gray-500 font-mono mt-2">Altitude Profile: 1,600m - 2,500m</p>
+              <h4 className="text-2xl font-black uppercase tracking-tight text-white">Nyungwe Marathon 2026</h4>
+              <p className="text-sm text-gray-500 font-mono mt-2 flex items-center gap-2">
+                <Mountain size={14} className="text-[#00ffcc]"/> Altitude Profile: 1,600m - 2,500m
+              </p>
             </div>
             <div className="relative w-full h-48 md:h-64">
               <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
@@ -341,13 +387,13 @@ function BookAndTelemetry({ setCursorVariant }: any) {
                   strokeWidth="3"
                   initial={{ pathLength: 0 }}
                   whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 2, ease: "easeInOut" }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 2.5, ease: "easeInOut" }}
                 />
 
                 {/* Interactive Node */}
                 <motion.circle 
-                  cx="300" cy="160" r="6" fill="#00ffcc"
+                  cx="300" cy="160" r="8" fill="#00ffcc"
                   onMouseEnter={() => { setActiveHoverNode('nyungwe'); setCursorVariant('hover'); }}
                   onMouseLeave={() => { setActiveHoverNode(null); setCursorVariant('default'); }}
                   whileHover={{ scale: 2 }}
@@ -358,7 +404,7 @@ function BookAndTelemetry({ setCursorVariant }: any) {
                 {activeHoverNode === 'nyungwe' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#00ffcc] p-4 font-mono text-xs text-[#00ffcc] backdrop-blur-sm pointer-events-none"
+                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#00ffcc] p-4 font-mono text-xs text-[#00ffcc] backdrop-blur-md pointer-events-none shadow-[0_0_30px_rgba(0,255,204,0.2)]"
                   >
                     [KM 21 SPLIT // ALTITUDE: 2,150M // ENVIRONMENT: HIGH RAINFOREST CANOPY]
                   </motion.div>
@@ -368,9 +414,9 @@ function BookAndTelemetry({ setCursorVariant }: any) {
           </div>
 
           {/* KIGALI PEACE MARATHON */}
-          <div className="p-8 border border-gray-800 bg-[#0a0a0a] relative overflow-hidden group">
+          <div className="p-8 border border-gray-800 bg-[#0d0d0d] relative overflow-hidden group">
             <div className="mb-8">
-              <h4 className="text-xl font-medium uppercase tracking-tight">Kigali Peace Marathon 2026</h4>
+              <h4 className="text-2xl font-black uppercase tracking-tight text-white">Kigali Peace Marathon 2026</h4>
               <p className="text-sm text-gray-500 font-mono mt-2">Pace vs. Rolling Topography</p>
             </div>
             <div className="relative w-full h-48 md:h-64">
@@ -387,7 +433,7 @@ function BookAndTelemetry({ setCursorVariant }: any) {
                   strokeWidth="2"
                   initial={{ pathLength: 0 }}
                   whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true }}
+                  viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 2, ease: "easeInOut" }}
                 />
 
@@ -399,13 +445,13 @@ function BookAndTelemetry({ setCursorVariant }: any) {
                   strokeWidth="3"
                   initial={{ pathLength: 0 }}
                   whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 2.5, delay: 0.5, ease: "easeInOut" }}
                 />
 
                 {/* Interactive Node */}
                 <motion.circle 
-                  cx="300" cy="80" r="6" fill="#3b82f6"
+                  cx="300" cy="80" r="8" fill="#3b82f6"
                   onMouseEnter={() => { setActiveHoverNode('kigali'); setCursorVariant('hover'); }}
                   onMouseLeave={() => { setActiveHoverNode(null); setCursorVariant('default'); }}
                   whileHover={{ scale: 2 }}
@@ -416,7 +462,7 @@ function BookAndTelemetry({ setCursorVariant }: any) {
                 {activeHoverNode === 'kigali' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#3b82f6] p-4 font-mono text-xs text-[#3b82f6] backdrop-blur-sm pointer-events-none"
+                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#3b82f6] p-4 font-mono text-xs text-[#3b82f6] backdrop-blur-md pointer-events-none shadow-[0_0_30px_rgba(59,130,246,0.2)]"
                   >
                     [KM 30 // INCLINE: 6% // PACE DELTA: +0:15/KM]
                   </motion.div>
@@ -436,48 +482,48 @@ function BookAndTelemetry({ setCursorVariant }: any) {
 // ---------------------------------------------------------------------------------
 function CapabilityBento({ setCursorVariant }: any) {
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-10">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 relative z-10 bg-[#0a0a0a]">
       <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-500">Capability Matrix</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[250px]">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[250px] md:auto-rows-[300px]">
         
         {/* HUGE STAT BOX */}
         <motion.div 
-          className="md:col-span-2 md:row-span-2 p-8 border border-[#00ffcc]/30 bg-[#00ffcc]/5 flex flex-col items-center justify-center relative overflow-hidden group"
+          className="md:col-span-2 md:row-span-2 p-8 border border-[#00ffcc]/30 bg-[#00ffcc]/5 flex flex-col items-center justify-center relative overflow-hidden group shadow-[inset_0_0_100px_rgba(0,255,204,0.05)]"
           whileHover={{ scale: 0.98 }}
           onMouseEnter={() => setCursorVariant('hover')}
           onMouseLeave={() => setCursorVariant('default')}
         >
           <div className="absolute inset-0 bg-[#00ffcc]/10 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-bottom"></div>
-          <h3 className="text-5xl md:text-7xl font-black tracking-tighter text-center z-10 text-[#00ffcc] uppercase leading-[0.9]">
+          <h3 className="text-5xl md:text-7xl lg:text-[6rem] font-black tracking-tighter text-center z-10 text-[#00ffcc] uppercase leading-[0.85]">
             9-Figure<br/>Portfolio<br/>Automated
           </h3>
         </motion.div>
 
         {/* MBA */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           className="md:col-span-2 p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
         >
-          <BookOpen size={32} className="text-blue-500" />
+          <BookOpen size={40} className="text-blue-500" />
           <div>
-            <h4 className="text-3xl font-bold mb-2">MBA in Finance & BBIS</h4>
+            <h4 className="text-3xl md:text-5xl font-black mb-2 tracking-tighter text-white">MBA in Finance & BBIS</h4>
             <p className="text-sm font-mono text-gray-500 uppercase">University of Nairobi</p>
           </div>
         </motion.div>
 
         {/* TECH STACK */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
           className="p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
         >
-          <Code2 size={24} className="text-gray-400 mb-4" />
+          <Code2 size={32} className="text-gray-400 mb-4" />
           <h4 className="text-sm font-bold tracking-widest uppercase mb-4 text-gray-500">Stack</h4>
-          <ul className="space-y-2 font-mono text-sm text-gray-300">
+          <ul className="space-y-3 font-mono text-sm md:text-base text-gray-300">
             <li>React / TS</li>
             <li>Python</li>
             <li>C#</li>
@@ -488,19 +534,19 @@ function CapabilityBento({ setCursorVariant }: any) {
 
         {/* LANGUAGES */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
           className="p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
         >
-          <Globe2 size={24} className="text-gray-400 mb-4" />
+          <Globe2 size={32} className="text-gray-400 mb-4" />
           <h4 className="text-sm font-bold tracking-widest uppercase mb-4 text-gray-500">Polyglot</h4>
-          <ul className="space-y-1 font-mono text-xs text-gray-300">
-            <li className="flex justify-between border-b border-gray-800 pb-1"><span>Kinyarwanda</span> <span className="text-[#00ffcc]">C2</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-1"><span>Kiswahili</span> <span className="text-[#00ffcc]">C1</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-1"><span>English</span> <span className="text-[#00ffcc]">C1</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-1"><span>French</span> <span className="text-[#00ffcc]">B2</span></li>
+          <ul className="space-y-2 font-mono text-xs md:text-sm text-gray-300">
+            <li className="flex justify-between border-b border-gray-800 pb-2"><span>Kinyarwanda</span> <span className="text-[#00ffcc]">C2</span></li>
+            <li className="flex justify-between border-b border-gray-800 pb-2"><span>French</span> <span className="text-[#00ffcc]">C2</span></li>
+            <li className="flex justify-between border-b border-gray-800 pb-2"><span>Kiswahili</span> <span className="text-[#00ffcc]">B2</span></li>
+            <li className="flex justify-between border-b border-gray-800 pb-2"><span>English</span> <span className="text-[#00ffcc]">C1</span></li>
             <li className="flex justify-between"><span>German</span> <span className="text-[#00ffcc]">A2</span></li>
           </ul>
         </motion.div>
@@ -515,23 +561,23 @@ function CapabilityBento({ setCursorVariant }: any) {
 // ---------------------------------------------------------------------------------
 function FooterSection({ setCursorVariant }: any) {
   return (
-    <footer id="contact-footer" className="w-full relative z-10 py-48 mt-32 border-t border-gray-200">
+    <footer id="contact-footer" className="w-full relative z-10 py-64 border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
         <motion.h2 
-          className="text-5xl md:text-8xl font-black tracking-tighter mb-16 uppercase"
+          className="text-6xl md:text-[8rem] font-black tracking-tighter mb-16 uppercase leading-[0.8]"
           onMouseEnter={() => setCursorVariant('hover')}
           onMouseLeave={() => setCursorVariant('default')}
         >
-          Initiate Contact
+          Initiate<br/>Contact
         </motion.h2>
         <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
           <a 
             href="mailto:iddirugero@gmail.com"
             onMouseEnter={() => setCursorVariant('hover')}
             onMouseLeave={() => setCursorVariant('default')}
-            className="flex items-center justify-center gap-3 px-8 h-16 bg-black text-white hover:bg-gray-800 transition-colors font-medium min-w-[200px] text-lg rounded-none border border-black"
+            className="flex items-center justify-center gap-3 px-12 h-20 bg-black text-white hover:bg-gray-800 transition-colors font-bold min-w-[250px] text-xl rounded-none border border-black shadow-xl"
           >
-            <Mail size={24} />
+            <Mail size={28} />
             iddirugero@gmail.com
           </a>
           <a 
@@ -540,9 +586,9 @@ function FooterSection({ setCursorVariant }: any) {
             rel="noopener noreferrer"
             onMouseEnter={() => setCursorVariant('hover')}
             onMouseLeave={() => setCursorVariant('default')}
-            className="flex items-center justify-center gap-3 px-8 h-16 border-2 border-black text-black hover:bg-gray-100 transition-colors font-medium min-w-[200px] text-lg rounded-none"
+            className="flex items-center justify-center gap-3 px-12 h-20 border-4 border-black text-black hover:bg-gray-100 transition-colors font-bold min-w-[250px] text-xl rounded-none shadow-xl"
           >
-            <Link size={24} />
+            <Link size={28} />
             LinkedIn Profile
           </a>
         </div>
