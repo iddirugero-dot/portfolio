@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
-import { ReactLenis } from '@studio-freight/react-lenis';
+import { ReactLenis, useLenis } from '@studio-freight/react-lenis';
 import { 
   ChevronDown, 
-  BookOpen, 
   Code2, 
-  Globe2, 
   Mail, 
   Link,
   Activity,
-  Mountain
+  Mountain,
+  GraduationCap,
+  MapPin,
+  UtensilsCrossed,
+  PenTool
 } from 'lucide-react';
 
 export default function App() {
   const [bootPhase, setBootPhase] = useState<'init' | 'compiling' | 'ready'>('init');
+  const [activeSection, setActiveSection] = useState('chapter-00');
   
-  // Custom Cursor state
+  // Custom Cursor
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
   const [cursorVariant, setCursorVariant] = useState('default');
@@ -30,40 +33,36 @@ export default function App() {
   }, [mouseX, mouseY]);
 
   useEffect(() => {
-    const bootTimer = setTimeout(() => setBootPhase('compiling'), 300);
-    const readyTimer = setTimeout(() => setBootPhase('ready'), 1500);
+    const bootTimer = setTimeout(() => setBootPhase('compiling'), 400);
+    const readyTimer = setTimeout(() => setBootPhase('ready'), 2000);
     return () => { clearTimeout(bootTimer); clearTimeout(readyTimer); };
   }, []);
 
-  // Scroll Progress for Footer Inversion
-  const { scrollYProgress } = useScroll();
-  const footerBgColor = useTransform(scrollYProgress, [0.85, 0.95], ['#0a0a0a', '#ffffff']);
-  const footerTextColor = useTransform(scrollYProgress, [0.85, 0.95], ['#ffffff', '#0a0a0a']);
+  // Global Scroll for Footer Inversion and Pipeline
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
+  
+  const footerBgColor = useTransform(scrollYProgress, [0.9, 0.95], ['#0a0a0a', '#ffffff']);
+  const footerTextColor = useTransform(scrollYProgress, [0.9, 0.95], ['#ffffff', '#0a0a0a']);
+  const footerBorderColor = useTransform(scrollYProgress, [0.9, 0.95], ['#333333', '#000000']);
 
   return (
     <ReactLenis root options={{ lerp: 0.05, smoothWheel: true }}>
       <motion.div 
+        ref={containerRef}
         style={{ backgroundColor: footerBgColor, color: footerTextColor }}
         className="min-h-screen font-sans overflow-x-hidden selection:bg-[#00ffcc] selection:text-black relative"
       >
-        {/* CUSTOM CURSOR */}
+        {/* CUSTOM CURSOR WITH EXCLUSION BLENDING */}
         <motion.div
-          className="fixed top-0 left-0 w-6 h-6 rounded-full bg-white pointer-events-none z-[9999] mix-blend-difference hidden md:flex items-center justify-center"
-          style={{
-            x: mouseX,
-            y: mouseY,
-            translateX: '-50%',
-            translateY: '-50%',
-          }}
-          variants={{
-            default: { scale: 1 },
-            hover: { scale: 3 },
-          }}
+          className="fixed top-0 left-0 w-6 h-6 rounded-full bg-white pointer-events-none z-[9999] mix-blend-exclusion hidden md:flex items-center justify-center"
+          style={{ x: mouseX, y: mouseY, translateX: '-50%', translateY: '-50%' }}
+          variants={{ default: { scale: 1 }, hover: { scale: 3 }, click: { scale: 0.5 } }}
           animate={cursorVariant}
           transition={{ type: 'spring', stiffness: 500, damping: 28, mass: 0.5 }}
         />
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {bootPhase !== 'ready' ? (
             <BootSequence key="boot" />
           ) : (
@@ -72,12 +71,23 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
+              className="relative w-full flex flex-col"
             >
-              <HeroParallax setCursorVariant={setCursorVariant} />
-              <VentureParallax setCursorVariant={setCursorVariant} />
-              <TerrainAndBook setCursorVariant={setCursorVariant} />
-              <CapabilityBento setCursorVariant={setCursorVariant} />
-              <FooterSection setCursorVariant={setCursorVariant} />
+              {/* SYSTEM NAV RENDERED AT Z-30 */}
+              <NavigationPipeline 
+                scrollYProgress={scrollYProgress} 
+                activeSection={activeSection} 
+                setCursorVariant={setCursorVariant} 
+              />
+
+              <div className="relative z-10">
+                <HeroSection mouseX={mouseX} mouseY={mouseY} setCursorVariant={setCursorVariant} setActiveSection={setActiveSection} />
+                <VentureAscent setCursorVariant={setCursorVariant} setActiveSection={setActiveSection} />
+                <PlaybookSection setCursorVariant={setCursorVariant} setActiveSection={setActiveSection} />
+                <EnduranceSection setActiveSection={setActiveSection} />
+                <CapabilityArsenal setActiveSection={setActiveSection} />
+                <FooterSection setCursorVariant={setCursorVariant} footerBorderColor={footerBorderColor} setActiveSection={setActiveSection} />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -87,208 +97,253 @@ export default function App() {
 }
 
 // ---------------------------------------------------------------------------------
-// 1. BOOT SEQUENCE
+// SYSTEM PIPELINE NAVIGATION
+// ---------------------------------------------------------------------------------
+function NavigationPipeline({ scrollYProgress, activeSection, setCursorVariant }: any) {
+  const lenis = useLenis();
+  const pipelineProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+  const navNodes = [
+    { id: 'chapter-00', label: '00_INIT', y: '10%' },
+    { id: 'chapter-01', label: '01_ASCENT', y: '26%' },
+    { id: 'chapter-02', label: '02_FRAMEWORK', y: '42%' },
+    { id: 'chapter-03', label: '03_ENDURANCE', y: '58%' },
+    { id: 'chapter-04', label: '04_ARSENAL', y: '74%' },
+    { id: 'chapter-05', label: '05_CONTACT', y: '90%' }
+  ];
+
+  const handleNavClick = (id: string) => {
+    if (lenis) {
+      lenis.scrollTo(`#${id}`, { offset: 0, duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+    }
+  };
+
+  return (
+    <div className="fixed top-0 left-2 md:left-8 w-16 h-full z-30 pointer-events-none group mix-blend-difference">
+      {/* Continuous Glowing Line */}
+      <svg className="absolute left-4 top-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 1000">
+        <motion.path d="M10,0 L10,1000" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="none" />
+        <motion.path d="M10,0 L10,1000" stroke="#00ffcc" strokeWidth="2" fill="none" style={{ pathLength: pipelineProgress }} />
+      </svg>
+
+      {/* Nodes & Labels */}
+      {navNodes.map((node) => {
+        const isActive = activeSection === node.id;
+        return (
+          <div key={node.id} className="absolute left-3 md:left-4 flex items-center pointer-events-auto" style={{ top: node.y }}>
+            <button
+              onClick={() => handleNavClick(node.id)}
+              onMouseEnter={() => setCursorVariant('hover')}
+              onMouseLeave={() => setCursorVariant('default')}
+              className="relative flex items-center group/node"
+            >
+              <motion.div 
+                className={`w-3 h-3 rounded-full border-2 transition-colors duration-300 ${isActive ? 'bg-[#00ffcc] border-[#00ffcc] shadow-[0_0_15px_#00ffcc]' : 'bg-[#0a0a0a] border-gray-600 group-hover/node:border-[#00ffcc]'}`}
+                animate={{ scale: isActive ? 1.5 : 1 }}
+              />
+              <span className={`absolute left-8 font-mono text-[10px] tracking-widest whitespace-nowrap transition-all duration-300 ${isActive ? 'opacity-100 translate-x-0 text-[#00ffcc]' : 'opacity-0 -translate-x-4 text-gray-500 group-hover/node:opacity-100 group-hover/node:translate-x-0'}`}>
+                {node.label}
+              </span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------
+// CHAPTER 00 // SYSTEM INITIALIZATION
 // ---------------------------------------------------------------------------------
 function BootSequence() {
-  const lines = [
+  const logs = [
     "[INIT] Core Runtime: Iddi Rugero",
-    "[INIT] Polyglot Localization Layer: Loaded (5/5) [Kinyarwanda, Kiswahili, English, French, German]",
-    "[INIT] Pipeline Architect: Active [Python, SQL, C#, Automated Frameworks]",
-    "[INIT] Terrain Constraints: Verified [5 Volcanic Peaks // 2026 Endurance Matrix]",
-    "Executing UI Thread..."
+    "[INIT] Environmental Context: Loaded (5/5) [Kinyarwanda, Kiswahili, English, French, German]",
+    "[INIT] Structural Logic Stacks: Active [Python, SQL, C#, Figma]",
+    "[INIT] Kinetic Constraints: Registered [5 Volcanic Peaks // 2026 Endurance Telemetry]",
+    "[INIT] Polymath Sub-Runtimes: Initializing [Off-Grid Torque // Flavor Balancing // Narrative Plotting]"
   ];
 
   return (
     <motion.div 
-      className="fixed inset-0 bg-[#0a0a0a] z-50 flex items-center justify-start p-8 md:p-24"
-      exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
+      className="fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col justify-center p-8 md:p-24"
+      exit={{ opacity: 0, filter: 'blur(20px)', scale: 1.05 }}
       transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
     >
-      <div className="font-mono text-[#00ffcc] text-xs md:text-sm space-y-2">
-        {lines.map((line, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.15, duration: 0.3 }}
-          >
+      <div className="font-mono text-[#00ffcc] text-xs md:text-sm space-y-3">
+        {logs.map((line, i) => (
+          <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.2, duration: 0.3 }}>
             {line}
           </motion.div>
         ))}
+        <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ delay: logs.length * 0.2, duration: 0.8, repeat: Infinity }} className="w-3 h-4 bg-[#00ffcc] inline-block mt-4" />
       </div>
     </motion.div>
   );
 }
 
-// ---------------------------------------------------------------------------------
-// 2. HERO PARALLAX SECTION (Cinematic Volcanoes)
-// ---------------------------------------------------------------------------------
-function HeroParallax({ setCursorVariant }: any) {
+function HeroSection({ mouseX, setCursorVariant, setActiveSection }: any) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
+  const yScroll = useTransform(scrollYProgress, [0, 1], ["0%", "40%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+  // Subtle 3D Depth Parallax based on mouse
+  const bgX = useSpring(useTransform(mouseX, [0, typeof window !== 'undefined' ? window.innerWidth : 1000], ["-2%", "2%"]), { stiffness: 50, damping: 20 });
 
   return (
     <section 
-      ref={ref}
-      className="relative w-full h-[150vh] bg-black"
+      id="chapter-00" 
+      ref={ref} 
+      onMouseEnter={() => setActiveSection('chapter-00')}
+      className="relative w-full min-h-screen bg-[#0a0a0a] overflow-hidden flex flex-col justify-center py-24 md:py-32 pl-16 pr-4 md:pl-48"
     >
-      {/* Sticky Container for the Image & Title */}
-      <div className="sticky top-0 w-full h-screen overflow-hidden flex flex-col justify-center">
-        
-        {/* Parallax Background Image */}
-        <motion.div 
-          style={{ y, scale }}
-          className="absolute inset-0 w-full h-full"
+      {/* FLUID CANVAS MATRIX BACKGROUND */}
+      <motion.div 
+        style={{ y: yScroll, opacity, x: bgX, scale: 1.05 }} 
+        className="absolute inset-0 z-0 opacity-50 mix-blend-screen pointer-events-none"
+      >
+        <img src="/hero_terrain.png" alt="Topographic Mountain Pipeline" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/30 via-[#0a0a0a]/70 to-[#0a0a0a]" />
+      </motion.div>
+      
+      <motion.div style={{ y: yScroll, opacity }} className="relative z-10 max-w-6xl mt-20 md:mt-0">
+        <motion.div
+          initial={{ clipPath: 'polygon(0 0, 0 0, 0 100%, 0% 100%)' }}
+          animate={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}
+          transition={{ duration: 1.5, ease: [0.76, 0, 0.24, 1], delay: 0.2 }}
         >
-          <div className="absolute inset-0 bg-black/60 z-10" /> {/* Dark overlay */}
-          <img 
-            src="/volcano.png" 
-            alt="Rwandan Volcanic Peaks" 
-            className="w-full h-full object-cover opacity-80"
-          />
-        </motion.div>
-
-        {/* Foreground Content */}
-        <motion.div 
-          style={{ opacity }}
-          className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pointer-events-none mt-24"
-        >
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.2, ease: [0.76, 0, 0.24, 1] }}
+          <h1 
+            className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black tracking-tighter leading-[0.85] text-white uppercase drop-shadow-2xl"
+            onMouseEnter={() => setCursorVariant('hover')}
+            onMouseLeave={() => setCursorVariant('default')}
           >
-            <h1 
-              className="text-6xl md:text-8xl lg:text-[12rem] font-black tracking-tighter leading-[0.8] mb-8 text-white drop-shadow-2xl mix-blend-screen"
-              onMouseEnter={() => setCursorVariant('hover')}
-              onMouseLeave={() => setCursorVariant('default')}
-            >
-              IDDI <br /> RUGERO
-            </h1>
-            <div className="max-w-2xl text-lg md:text-2xl text-gray-200 font-light leading-relaxed drop-shadow-md">
-              <span className="font-bold text-[#00ffcc]">SYSTEMS & OPERATIONS.</span><br/>
-              I engineer automated data pipelines, manage cross-border financial operations, and design scalable business frameworks.<br/><br/>
-              <span className="italic flex items-center gap-2 text-white">
-                <Mountain size={20} className="text-[#00ffcc]" />
-                Conquered all 5 Volcanoes of Rwanda. Endurance Hiker.
-              </span>
-            </div>
-          </motion.div>
+            IDDI RUGERO <br /> 
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00ffcc] to-blue-500">
+              Systems & Operations
+            </span>
+          </h1>
         </motion.div>
         
-        {/* Scroll Indicator */}
-        <motion.div 
-          style={{ opacity }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-[#00ffcc]"
+        <motion.div
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1 }}
+          className="mt-12 max-w-3xl border-l-4 border-[#00ffcc] pl-6 backdrop-blur-sm bg-black/40 py-6 pr-6 rounded-r-lg shadow-2xl"
         >
-          <span className="font-mono text-xs uppercase tracking-widest">Scroll Sequence</span>
-          <motion.div 
-            animate={{ y: [0, 10, 0] }} 
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-[1px] h-12 bg-gradient-to-b from-[#00ffcc] to-transparent"
-          />
+          <p className="text-lg md:text-2xl text-gray-200 font-light leading-relaxed">
+            From summiting all 5 of Rwanda’s volcanic peaks to engineering automated financial pipelines for nine-figure institutional portfolios. I build systems that scale, and I don't stop until the summit is reached.
+          </p>
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------------
-// 3. VENTURE PARALLAX (Data Pipeline Background)
+// CHAPTER 01 // THE ASCENT (Venture Accordion)
 // ---------------------------------------------------------------------------------
-function VentureParallax({ setCursorVariant }: any) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
-
-  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+function VentureAscent({ setCursorVariant, setActiveSection }: any) {
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(0);
   const toggleAccordion = (index: number) => setActiveAccordion(activeAccordion === index ? null : index);
 
-  const experiences = [
+  const ventures = [
     {
       title: "PM ALPHA // Operations Analyst",
       meta: "Remote, London - UK | 2024 - Present",
-      content: "Managing a 9-figure portfolio automated pipeline, processing daily NAV calculations, cross-border ETN asset settlements, and debugging customized Python scripts to wipe out manual operational errors."
+      content: "Managing automated reporting frameworks for a nine-figure portfolio, processing daily NAV calculations, cross-border ETN settlements, and writing custom Python scripts to eliminate operational errors."
     },
     {
       title: "Wekraft Ltd // Co-founder & CFO",
       meta: "Kigali, Rwanda | 2023 - 2024",
-      content: "Constructing corporate financial infrastructure, managing tax compliance, budgeting, and raising $27,000 in seed capital."
+      content: "Designing financial architecture from scratch, ensuring tax and regulatory compliance, corporate budgeting, and successfully raising $27,000 in seed capital."
     },
     {
-      title: "Jasiri Talent Investor Program // Jasiri Fellow",
+      title: "Jasiri Talent Investor // Jasiri Fellow",
       meta: "Kigali, Rwanda | 2023 - 2024",
-      content: "Focus on rigorous entrepreneurial leadership, systems thinking, and structural market due diligence."
+      content: "Rigorous entrepreneurial leadership, deep systems thinking, and conducting market due diligence to validate high-growth African venture models."
     },
     {
-      title: "Arbour LTD & Green Harvest // Full-Stack & Automation",
+      title: "Arbour LTD // Systems & Automation",
       meta: "2018 - 2023",
-      content: "Systems engineering using C# and Python, wireframing in Figma, and constructing macro-automation tools using custom VBA code."
+      content: "Initializing pre-seed ventures, coding application modules in C# and Python, wireframing interfaces in Figma, and automating enterprise records via advanced macros."
     }
   ];
 
   return (
-    <section ref={ref} className="relative w-full py-32 overflow-hidden bg-[#0a0a0a]">
-      {/* Background Parallax */}
-      <motion.div style={{ y }} className="absolute inset-0 w-full h-[140%] -top-[20%] opacity-20 pointer-events-none">
-        <img src="/data.png" alt="Data Pipeline" className="w-full h-full object-cover mix-blend-screen" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
-      </motion.div>
+    <section 
+      id="chapter-01" 
+      onMouseEnter={() => setActiveSection('chapter-01')}
+      className="relative w-full py-24 md:py-32 bg-[#0a0a0a] pl-16 pr-4 md:pl-48 overflow-hidden"
+    >
+      <div className="absolute right-0 top-1/4 w-1/2 h-[800px] opacity-20 mix-blend-screen pointer-events-none">
+        <img src="/venture_blueprint.png" alt="Financial Blueprint" className="w-full h-full object-cover object-left" style={{ maskImage: 'linear-gradient(to left, black, transparent)' }} />
+      </div>
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-400">Venture Architecture</h3>
-        <motion.div layout className="flex flex-col border-t border-gray-800">
-          <AnimatePresence>
-            {experiences.map((exp, idx) => (
-              <motion.div layout key={idx} className="border-b border-gray-800 overflow-hidden">
-                <motion.button
-                  layout
-                  onClick={() => toggleAccordion(idx)}
-                  onMouseEnter={() => setCursorVariant('hover')}
-                  onMouseLeave={() => setCursorVariant('default')}
-                  className="w-full flex items-center justify-between py-10 text-left hover:text-[#00ffcc] transition-colors group"
-                >
-                  <div>
-                    <h4 className="text-2xl md:text-5xl font-black tracking-tighter uppercase">{exp.title}</h4>
-                    <span className="text-sm mt-3 block font-mono text-gray-400 group-hover:text-gray-300 transition-colors">{exp.meta}</span>
-                  </div>
-                  <motion.div animate={{ rotate: activeAccordion === idx ? 180 : 0 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }}>
-                    <ChevronDown size={36} />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {activeAccordion === idx && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-10 pt-4 pr-8 md:w-3/4 text-xl md:text-2xl text-gray-300 font-light leading-relaxed">
-                        {exp.content}
-                      </div>
+      <div className="w-full max-w-6xl relative z-10">
+        <h2 className="text-sm font-bold mb-16 tracking-[0.3em] uppercase text-[#00ffcc]">
+          Chapter 01 // The Ascent: Institutional Capital
+        </h2>
+        
+        <div className="flex relative">
+          {/* Timeline Axis with Pulsing Micro-Nodes */}
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-800 ml-[11px]" />
+
+          <motion.div layout className="flex flex-col w-full">
+            <AnimatePresence>
+              {ventures.map((exp, idx) => (
+                <motion.div layout key={idx} className="relative group pl-10 border-b border-gray-800/50 last:border-0 py-8">
+                  {/* Neon Teal Timeline Node */}
+                  <motion.div 
+                    layout
+                    className={`absolute left-[7px] top-12 w-[9px] h-[9px] rounded-full transition-all duration-500 z-10
+                      ${activeAccordion === idx 
+                        ? 'bg-[#00ffcc] shadow-[0_0_15px_#00ffcc] scale-150' 
+                        : 'bg-gray-700 group-hover:bg-[#00ffcc]/50 scale-100'}`} 
+                  />
+
+                  <motion.button
+                    layout
+                    onClick={() => toggleAccordion(idx)}
+                    onMouseEnter={() => setCursorVariant('hover')}
+                    onMouseLeave={() => setCursorVariant('default')}
+                    className="w-full flex items-center justify-between text-left transition-colors"
+                  >
+                    <div className="w-4/5">
+                      <h4 className={`text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase transition-colors ${activeAccordion === idx ? 'text-[#00ffcc]' : 'text-white group-hover:text-gray-300'}`}>
+                        {exp.title}
+                      </h4>
+                      <span className="text-xs md:text-sm mt-3 block font-mono text-gray-500 uppercase tracking-widest">{exp.meta}</span>
+                    </div>
+                    <motion.div animate={{ rotate: activeAccordion === idx ? 180 : 0 }} className={activeAccordion === idx ? "text-[#00ffcc]" : "text-gray-600"}>
+                      <ChevronDown size={32} />
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                  </motion.button>
+                  
+                  <AnimatePresence>
+                    {activeAccordion === idx && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }} className="overflow-hidden"
+                      >
+                        <div className="pt-6 pb-2 pr-8 md:w-3/4 text-lg md:text-xl text-gray-300 font-light leading-relaxed border-l-2 border-[#00ffcc]/30 pl-6 ml-2">
+                          {exp.content}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------------
-// 4. BOOK CASE & TELEMETRY (Image Masking Reveal)
+// CHAPTER 02 // THE PLAYBOOK (The Book Case)
 // ---------------------------------------------------------------------------------
-function TerrainAndBook({ setCursorVariant }: any) {
-  // 3D Tilt for Book Case
+function PlaybookSection({ setCursorVariant, setActiveSection }: any) {
   const bookRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -305,172 +360,53 @@ function TerrainAndBook({ setCursorVariant }: any) {
   };
   const handleMouseLeave = () => { x.set(0); y.set(0); };
 
-  const [activeHoverNode, setActiveHoverNode] = useState<string | null>(null);
-
-  // Scroll Reveal for Book Image Mask
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "center center"] });
   const clipPath = useTransform(scrollYProgress, [0, 1], ["inset(100% 0 0 0)", "inset(0% 0 0 0)"]);
 
   return (
-    <section ref={containerRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 space-y-32 relative z-10 bg-[#0a0a0a]">
-      
-      {/* THE BOOK CASE - HIGH END REVEAL */}
-      <motion.div 
-        ref={bookRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onMouseEnter={() => setCursorVariant('hover')}
-        style={{ perspective: 1000 }}
-        className="w-full relative"
-      >
-        <motion.div 
-          style={{ rotateX, rotateY }}
-          className="w-full relative min-h-[400px] border border-gray-800 rounded-xl flex flex-col md:flex-row justify-between items-center overflow-hidden shadow-2xl bg-black"
-        >
-          {/* Masked Image Reveal */}
-          <motion.div style={{ clipPath }} className="absolute inset-0 w-full h-full opacity-40">
-            <img src="/book.png" alt="97 Business Ideas" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-          </motion.div>
-
-          <div className="absolute top-0 left-0 w-2 h-full bg-[#00ffcc] z-20"></div>
-          
-          <div className="max-w-2xl z-20 p-8 md:p-16">
-            <div className="flex items-center gap-3 mb-4 text-[#00ffcc]">
-              <BookOpen size={24} />
-              <span className="text-sm font-bold tracking-widest uppercase">Publication</span>
-            </div>
-            <h3 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-white drop-shadow-lg">97 Business Ideas</h3>
-            <p className="text-sm font-medium tracking-widest mb-6 text-gray-400 uppercase">Second Edition</p>
-            <p className="leading-relaxed text-gray-200 text-xl font-light drop-shadow-md">
-              A structured analytical volume detailing validation methodologies and regional scale strategy for emerging market ventures. 
-              Focuses on actionable systemic frameworks over theoretical business concepts.
-            </p>
-          </div>
-          
-          <div className="flex-shrink-0 z-20 hidden md:block p-16">
-            <div className="w-48 h-64 border border-white/20 bg-black/50 backdrop-blur-md text-white flex items-center justify-center text-center p-6 font-black tracking-tighter text-3xl shadow-[0_0_50px_rgba(0,255,204,0.1)]">
-              97<br/>BUSINESS<br/>IDEAS
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* MARATHON TELEMETRY OVERHAUL */}
-      <div>
-        <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-500 flex items-center gap-3">
-          <Activity size={20} /> Terrain Telemetry Log
-        </h3>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          
-          {/* NYUNGWE MARATHON */}
-          <div className="p-8 border border-gray-800 bg-[#0d0d0d] relative overflow-hidden group">
-            <div className="mb-8">
-              <h4 className="text-2xl font-black uppercase tracking-tight text-white">Nyungwe Marathon 2026</h4>
-              <p className="text-sm text-gray-500 font-mono mt-2 flex items-center gap-2">
-                <Mountain size={14} className="text-[#00ffcc]"/> Altitude Profile: 1,600m - 2,500m
+    <section 
+      id="chapter-02" 
+      ref={containerRef} 
+      onMouseEnter={() => setActiveSection('chapter-02')}
+      className="w-full py-24 md:py-32 bg-[#0a0a0a] pl-16 pr-4 md:pl-48"
+    >
+      <div className="w-full max-w-6xl relative z-10">
+        <h2 className="text-sm font-bold mb-16 tracking-[0.3em] uppercase text-[#00ffcc]">
+          Chapter 02 // The Framework: Distilling Strategy
+        </h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <div className="p-8 border border-gray-800 bg-[#111] rounded-xl relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 p-4 opacity-10"><PenTool size={100} /></div>
+              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4 relative z-10">The Writing Parallel</h3>
+              <p className="text-lg text-gray-400 font-light leading-relaxed relative z-10">
+                Whether mapping a market gap in an African regulatory landscape or plotting narrative architecture for movie scripts, the core objective is identical: <strong className="text-white">establishing structural progression, eliminating fluff, and driving flawless execution.</strong>
               </p>
             </div>
-            <div className="relative w-full h-48 md:h-64">
-              <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
-                {/* Grid */}
-                <line x1="0" y1="40" x2="500" y2="40" stroke="#222" strokeDasharray="4 4" />
-                <line x1="0" y1="100" x2="500" y2="100" stroke="#222" strokeDasharray="4 4" />
-                <line x1="0" y1="160" x2="500" y2="160" stroke="#222" strokeDasharray="4 4" />
-                
-                {/* Telemetry Path */}
-                <motion.path 
-                  d="M0,80 Q50,70 100,90 T200,40 T300,160 T400,60 T500,20" 
-                  fill="none" 
-                  stroke="#00ffcc" 
-                  strokeWidth="3"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 2.5, ease: "easeInOut" }}
-                />
-
-                {/* Interactive Node */}
-                <motion.circle 
-                  cx="300" cy="160" r="8" fill="#00ffcc"
-                  onMouseEnter={() => { setActiveHoverNode('nyungwe'); setCursorVariant('hover'); }}
-                  onMouseLeave={() => { setActiveHoverNode(null); setCursorVariant('default'); }}
-                  whileHover={{ scale: 2 }}
-                  className="cursor-pointer"
-                />
-              </svg>
-              <AnimatePresence>
-                {activeHoverNode === 'nyungwe' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#00ffcc] p-4 font-mono text-xs text-[#00ffcc] backdrop-blur-md pointer-events-none shadow-[0_0_30px_rgba(0,255,204,0.2)]"
-                  >
-                    [KM 21 SPLIT // ALTITUDE: 2,150M // ENVIRONMENT: HIGH RAINFOREST CANOPY]
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
 
-          {/* KIGALI PEACE MARATHON */}
-          <div className="p-8 border border-gray-800 bg-[#0d0d0d] relative overflow-hidden group">
-            <div className="mb-8">
-              <h4 className="text-2xl font-black uppercase tracking-tight text-white">Kigali Peace Marathon 2026</h4>
-              <p className="text-sm text-gray-500 font-mono mt-2">Pace vs. Rolling Topography</p>
-            </div>
-            <div className="relative w-full h-48 md:h-64">
-              <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
-                {/* Grid */}
-                <line x1="0" y1="50" x2="500" y2="50" stroke="#222" strokeDasharray="4 4" />
-                <line x1="0" y1="150" x2="500" y2="150" stroke="#222" strokeDasharray="4 4" />
-                
-                {/* Elevation Path */}
-                <motion.path 
-                  d="M0,150 Q100,100 150,130 T300,80 T400,120 T500,60" 
-                  fill="none" 
-                  stroke="#4b5563" 
-                  strokeWidth="2"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 2, ease: "easeInOut" }}
-                />
-
-                {/* Pace Distribution Path */}
-                <motion.path 
-                  d="M0,100 Q100,140 150,110 T300,150 T400,90 T500,110" 
-                  fill="none" 
-                  stroke="#3b82f6" 
-                  strokeWidth="3"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 2.5, delay: 0.5, ease: "easeInOut" }}
-                />
-
-                {/* Interactive Node */}
-                <motion.circle 
-                  cx="300" cy="80" r="8" fill="#3b82f6"
-                  onMouseEnter={() => { setActiveHoverNode('kigali'); setCursorVariant('hover'); }}
-                  onMouseLeave={() => { setActiveHoverNode(null); setCursorVariant('default'); }}
-                  whileHover={{ scale: 2 }}
-                  className="cursor-pointer"
-                />
-              </svg>
-              <AnimatePresence>
-                {activeHoverNode === 'kigali' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 bg-black/90 border border-[#3b82f6] p-4 font-mono text-xs text-[#3b82f6] backdrop-blur-md pointer-events-none shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-                  >
-                    [KM 30 // INCLINE: 6% // PACE DELTA: +0:15/KM]
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
+          <motion.div 
+            ref={bookRef} onMouseMove={handleMouseMove} onMouseEnter={() => setCursorVariant('hover')} onMouseLeave={() => { handleMouseLeave(); setCursorVariant('default'); }}
+            style={{ perspective: 1000 }} className="w-full h-[500px] relative flex justify-center items-center"
+          >
+            <motion.div 
+              style={{ rotateX, rotateY }}
+              className="w-3/4 max-w-[350px] h-full relative border border-gray-700 rounded-lg overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] bg-black group transition-shadow hover:shadow-[0_40px_80px_-20px_rgba(0,255,204,0.15)]"
+            >
+              <motion.div style={{ clipPath }} className="absolute inset-0 w-full h-full opacity-90 group-hover:opacity-100 transition-opacity">
+                <img src="/book.jpg" alt="97 Business Ideas" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              </motion.div>
+              <div className="absolute top-0 left-0 w-2 h-full bg-[#00ffcc] z-20 shadow-[2px_0_10px_rgba(0,255,204,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-full p-6 z-20">
+                <p className="text-xs font-mono tracking-widest mb-1 text-[#00ffcc] uppercase">Second Edition</p>
+                <h3 className="text-2xl font-black tracking-tighter text-white drop-shadow-lg leading-none mb-3">97 BUSINESS<br/>IDEAS</h3>
+                <p className="text-xs text-gray-300 font-light">Operational playbook for African markets—built from the ground up.</p>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -478,121 +414,243 @@ function TerrainAndBook({ setCursorVariant }: any) {
 }
 
 // ---------------------------------------------------------------------------------
-// 5. CAPABILITY BENTO
+// CHAPTER 03 // STRESS-TESTING THE HARDWARE (Endurance)
 // ---------------------------------------------------------------------------------
-function CapabilityBento({ setCursorVariant }: any) {
+function EnduranceSection({ setActiveSection }: any) {
+  const volcanoes = [
+    { name: "Karisimbi", height: "4,507m", path: "M0,100 L50,10 L100,100" },
+    { name: "Bisoke", height: "3,711m", path: "M0,100 L50,30 L100,100" },
+    { name: "Muhabura", height: "4,127m", path: "M0,100 L50,20 L100,100" },
+    { name: "Gahinga", height: "3,474m", path: "M0,100 L50,40 L100,100" },
+    { name: "Sabyinyo", height: "3,669m", path: "M0,100 L50,35 L100,100" },
+  ];
+
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 relative z-10 bg-[#0a0a0a]">
-      <h3 className="text-sm font-bold mb-12 tracking-[0.2em] uppercase text-gray-500">Capability Matrix</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[250px] md:auto-rows-[300px]">
-        
-        {/* HUGE STAT BOX */}
-        <motion.div 
-          className="md:col-span-2 md:row-span-2 p-8 border border-[#00ffcc]/30 bg-[#00ffcc]/5 flex flex-col items-center justify-center relative overflow-hidden group shadow-[inset_0_0_100px_rgba(0,255,204,0.05)]"
-          whileHover={{ scale: 0.98 }}
-          onMouseEnter={() => setCursorVariant('hover')}
-          onMouseLeave={() => setCursorVariant('default')}
-        >
-          <div className="absolute inset-0 bg-[#00ffcc]/10 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-bottom"></div>
-          <h3 className="text-5xl md:text-7xl lg:text-[6rem] font-black tracking-tighter text-center z-10 text-[#00ffcc] uppercase leading-[0.85]">
-            9-Figure<br/>Portfolio<br/>Automated
-          </h3>
-        </motion.div>
-
-        {/* MBA */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="md:col-span-2 p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
-        >
-          <BookOpen size={40} className="text-blue-500" />
-          <div>
-            <h4 className="text-3xl md:text-5xl font-black mb-2 tracking-tighter text-white">MBA in Finance & BBIS</h4>
-            <p className="text-sm font-mono text-gray-500 uppercase">University of Nairobi</p>
+    <section 
+      id="chapter-03" 
+      onMouseEnter={() => setActiveSection('chapter-03')}
+      className="w-full py-24 md:py-32 bg-[#0a0a0a] pl-16 pr-4 md:pl-48"
+    >
+      <div className="w-full max-w-6xl relative z-10 space-y-16">
+        <div>
+          <h2 className="text-sm font-bold mb-6 tracking-[0.3em] uppercase text-[#00ffcc]">
+            Chapter 03 // Physical Control Environments
+          </h2>
+          <div className="border-l-4 border-gray-800 pl-6 mb-16 max-w-4xl bg-[#111]/50 p-6 rounded-r-xl">
+            <p className="text-xl md:text-3xl text-gray-300 font-light leading-relaxed">
+              In high-end financial operations, you manipulate abstract digital parameters. Out on the terrain, there are no anomalies—there is only gravity, friction, and stamina. <strong className="text-white">Pushing boundaries in the wild is my physical control environment.</strong>
+            </p>
           </div>
-        </motion.div>
+        </div>
 
-        {/* TECH STACK */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
-        >
-          <Code2 size={32} className="text-gray-400 mb-4" />
-          <h4 className="text-sm font-bold tracking-widest uppercase mb-4 text-gray-500">Stack</h4>
-          <ul className="space-y-3 font-mono text-sm md:text-base text-gray-300">
-            <li>React / TS</li>
-            <li>Python</li>
-            <li>C#</li>
-            <li>SQL</li>
-            <li>Figma</li>
-          </ul>
-        </motion.div>
+        {/* 5 VOLCANOES ARRAY */}
+        <div>
+          <h3 className="text-xs font-bold mb-8 tracking-[0.2em] uppercase text-gray-500 flex items-center gap-3">
+            <Mountain size={16} /> The Volcanic Vector Array
+          </h3>
+          <div className="flex flex-wrap justify-between gap-4 border border-gray-800 p-8 rounded-xl bg-[#0d0d0d] relative z-40 overflow-hidden shadow-2xl">
+            {volcanoes.map((volcano, idx) => (
+              <div key={idx} className="flex flex-col items-center flex-1 min-w-[90px] md:min-w-[120px] relative z-20 mb-8">
+                <svg viewBox="0 0 100 100" className="w-20 h-20 md:w-28 md:h-28 mb-4 overflow-visible">
+                  <motion.path 
+                    d={volcano.path} fill="none" stroke="#ffffff" strokeWidth="2"
+                    initial={{ pathLength: 0, opacity: 0 }} whileInView={{ pathLength: 1, opacity: 1 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 1.5, delay: idx * 0.2, ease: "easeOut" }}
+                  />
+                  <motion.circle cx="50" cy="100" r="3" fill="#00ffcc" />
+                </svg>
+                <div className="bg-black/60 px-2 py-1 rounded backdrop-blur-sm shadow-xl text-center border border-gray-800">
+                  <h4 className="text-sm md:text-lg font-black uppercase text-white tracking-widest">{volcano.name}</h4>
+                  <p className="text-[#00ffcc] font-mono text-xs">{volcano.height}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        {/* LANGUAGES */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="p-8 border border-gray-800 bg-[#111] flex flex-col justify-between"
-        >
-          <Globe2 size={32} className="text-gray-400 mb-4" />
-          <h4 className="text-sm font-bold tracking-widest uppercase mb-4 text-gray-500">Polyglot</h4>
-          <ul className="space-y-2 font-mono text-xs md:text-sm text-gray-300">
-            <li className="flex justify-between border-b border-gray-800 pb-2"><span>Kinyarwanda</span> <span className="text-[#00ffcc]">C2</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-2"><span>French</span> <span className="text-[#00ffcc]">C2</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-2"><span>Kiswahili</span> <span className="text-[#00ffcc]">B2</span></li>
-            <li className="flex justify-between border-b border-gray-800 pb-2"><span>English</span> <span className="text-[#00ffcc]">C1</span></li>
-            <li className="flex justify-between"><span>German</span> <span className="text-[#00ffcc]">A2</span></li>
-          </ul>
-        </motion.div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* MARATHON TELEMETRY FIX: SCALED PATHS TO PREVENT CLIPPING */}
+          <div className="p-8 border border-gray-800 bg-[#0d0d0d] rounded-xl flex flex-col justify-between">
+            <div className="mb-8">
+              <h3 className="text-xs font-bold mb-4 tracking-[0.2em] uppercase text-gray-500 flex items-center gap-3"><Activity size={16} /> 2026 Marathon Telemetry</h3>
+              <h4 className="text-xl font-black uppercase tracking-tight text-white mb-2">Nyungwe & Kigali</h4>
+              <p className="text-sm text-gray-400 font-mono">Volatile elevation vs. street-grid pacing.</p>
+            </div>
+            <div className="relative w-full h-48 mt-auto overflow-hidden rounded">
+              <svg viewBox="0 0 500 200" className="w-full h-full">
+                {/* TIGHTER Y-BOUNDS: between 40 and 160 safely */}
+                <line x1="0" y1="50" x2="500" y2="50" stroke="#222" strokeDasharray="4 4" />
+                <line x1="0" y1="100" x2="500" y2="100" stroke="#222" strokeDasharray="4 4" />
+                <line x1="0" y1="150" x2="500" y2="150" stroke="#222" strokeDasharray="4 4" />
+                
+                <motion.path 
+                  d="M0,90 Q50,70 100,100 T200,60 T300,140 T400,70 T500,40" fill="none" stroke="#00ffcc" strokeWidth="2.5"
+                  initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 2 }}
+                />
+                <motion.path 
+                  d="M0,140 Q100,110 150,130 T300,120 T400,100 T500,110" fill="none" stroke="#3b82f6" strokeWidth="2.5"
+                  initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 2, delay: 0.5 }}
+                />
+              </svg>
+            </div>
+          </div>
 
+          {/* THE ENDURO MATRIX */}
+          <div className="p-8 border border-gray-800 bg-[#0d0d0d] rounded-xl flex flex-col justify-between overflow-hidden relative group shadow-xl">
+            <div className="absolute inset-0 z-0 opacity-40 mix-blend-luminosity group-hover:opacity-60 transition-opacity duration-700">
+              <img src="/enduro_bike.png" alt="Enduro Trail" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/80 to-[#0d0d0d]/30" />
+            </div>
+            
+            <div className="mb-8 relative z-10">
+              <h3 className="text-xs font-bold mb-4 tracking-[0.2em] uppercase text-[#00ffcc] flex items-center gap-3"><MapPin size={16} /> The Enduro Matrix</h3>
+              <h4 className="text-2xl font-black uppercase tracking-tight text-white mb-2 drop-shadow-md">Off-Grid Navigation</h4>
+              <p className="text-sm text-gray-200 leading-relaxed max-w-sm mt-4 bg-black/60 backdrop-blur-md p-4 rounded-md border border-gray-700 shadow-2xl">
+                Long-range tours across rugged East African trails on a 200cc dual-sport enduro bike. Tracked via torque application, micro-route optimization, and pure kinetic endurance.
+              </p>
+            </div>
+
+            <div className="flex gap-4 mt-8 relative z-10">
+              <div className="bg-black/80 backdrop-blur-md border border-[#00ffcc]/50 px-4 py-2 rounded shadow-lg">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Engine</p>
+                <p className="text-[#00ffcc] font-mono font-bold">200cc Dual-Sport</p>
+              </div>
+              <div className="bg-black/80 backdrop-blur-md border border-gray-600 px-4 py-2 rounded shadow-lg">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Terrain</p>
+                <p className="text-white font-mono font-bold">East African Trails</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------------
-// 6. CANVAS INVERSION FOOTER
+// CHAPTER 04 // THE ARSENAL (Capability Bento)
 // ---------------------------------------------------------------------------------
-function FooterSection({ setCursorVariant }: any) {
+function CapabilityArsenal({ setActiveSection }: any) {
   return (
-    <footer id="contact-footer" className="w-full relative z-10 py-64 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+    <section 
+      id="chapter-04" 
+      onMouseEnter={() => setActiveSection('chapter-04')}
+      className="w-full py-24 md:py-32 bg-[#0a0a0a] pl-16 pr-4 md:pl-48"
+    >
+      <div className="w-full max-w-6xl relative z-10">
+        <h2 className="text-sm font-bold mb-16 tracking-[0.3em] uppercase text-[#00ffcc]">
+          Chapter 04 // The Arsenal: Toolsets for Global Reach
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-auto">
+          {/* Block A */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="md:col-span-2 p-8 border border-gray-800 bg-[#111] rounded-xl flex flex-col justify-center shadow-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-blue-500/10 rounded-lg"><GraduationCap size={24} className="text-blue-500" /></div>
+              <h3 className="text-sm font-bold tracking-[0.2em] uppercase text-gray-500">Block A // Academic Logic</h3>
+            </div>
+            <div className="mb-8">
+              <h4 className="text-2xl md:text-3xl font-black tracking-tighter text-white mb-2">Master of Business Administration in Finance</h4>
+              <p className="text-xs font-mono text-[#00ffcc] uppercase mb-3">University of Nairobi | GPA: 3.7/4.0</p>
+              <p className="text-sm text-gray-400">Thesis: The Effect of Big Data Analytics on Credit Risk Assessment in Commercial Banks of Kenya.</p>
+            </div>
+            <div className="pt-8 border-t border-gray-800">
+              <h4 className="text-xl md:text-2xl font-black tracking-tighter text-white mb-2">Bachelor of Business Information Systems</h4>
+              <p className="text-xs font-mono text-[#00ffcc] uppercase mb-1">University of Nairobi | GPA: 3.9/4.0</p>
+              <p className="text-sm text-gray-400">First Class Honours</p>
+            </div>
+          </motion.div>
+
+          {/* Block B */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="p-8 border border-gray-800 bg-[#111] rounded-xl flex flex-col justify-between shadow-2xl">
+            <div>
+              <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-purple-500/10 rounded-lg"><Code2 size={24} className="text-purple-500" /></div><h3 className="text-sm font-bold tracking-[0.2em] uppercase text-gray-500">Block B // Matrix</h3></div>
+              <div className="flex flex-wrap gap-2 mb-8">
+                {["Python", "SQL", "C#", "HTML", "Figma", "Adobe XD", "Illustrator", "Photoshop"].map(tech => (
+                  <span key={tech} className="px-2 py-1 bg-[#1a1a1a] border border-gray-700 rounded font-mono text-[10px] text-gray-300 uppercase">{tech}</span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-6 border-t border-gray-800">
+              <h4 className="text-[10px] font-mono tracking-widest text-gray-500 uppercase mb-4">5-Language Network</h4>
+              <ul className="space-y-2 font-mono text-xs text-gray-300">
+                <li className="flex justify-between"><span>Kinyarwanda</span> <span className="text-[#00ffcc]">Native</span></li>
+                <li className="flex justify-between"><span>Kiswahili</span> <span className="text-[#00ffcc]">Fluent</span></li>
+                <li className="flex justify-between"><span>English</span> <span className="text-[#00ffcc]">Fluent</span></li>
+                <li className="flex justify-between"><span>French</span> <span className="text-[#00ffcc]">Fluent</span></li>
+                <li className="flex justify-between text-gray-500"><span>German</span> <span>Basic</span></li>
+              </ul>
+            </div>
+          </motion.div>
+
+          {/* Block C */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }} 
+            className="md:col-span-3 p-8 border border-gray-800 bg-black rounded-xl flex flex-col md:flex-row gap-8 items-center overflow-hidden relative group min-h-[300px] shadow-2xl"
+          >
+            <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen group-hover:opacity-60 transition-opacity duration-700">
+              <img src="/kitchen_chemistry.png" alt="Flavor Chemistry Optimization" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-[#0a0a0a]/50" />
+            </div>
+
+            <div className="flex-shrink-0 p-6 bg-black/60 backdrop-blur-md rounded-full border border-[#00ffcc]/30 relative z-10 shadow-[0_0_30px_rgba(0,255,204,0.1)]">
+              <UtensilsCrossed size={40} className="text-[#00ffcc]" />
+            </div>
+            
+            <div className="relative z-10 bg-black/60 backdrop-blur-md p-8 rounded-xl border border-gray-800 w-full shadow-2xl">
+              <h3 className="text-sm font-bold tracking-[0.2em] uppercase text-[#00ffcc] mb-2">Block C // System Optimization in the Kitchen</h3>
+              <h4 className="text-2xl md:text-3xl font-black uppercase text-white mb-4 tracking-tight">Flavor Chemistry Optimized</h4>
+              <p className="text-gray-200 font-light leading-relaxed md:text-lg max-w-4xl">
+                Applying precision to sensory architectures—mastering metric-driven spice profiles, complex umami enhancers, and temperature constraints for stews, pizza dough fermentations, and multi-layered lasagnas. Kitchen execution is flavor chemistry optimized.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------------
+// CHAPTER 05 // THE BLINDING INVERSION FOOTER
+// ---------------------------------------------------------------------------------
+function FooterSection({ setCursorVariant, footerBorderColor, setActiveSection }: any) {
+  return (
+    <motion.footer 
+      id="chapter-05" 
+      onMouseEnter={() => setActiveSection('chapter-05')}
+      style={{ borderColor: footerBorderColor }}
+      className="w-full relative z-10 py-48 border-t transition-colors duration-500 pl-16 pr-4 md:pl-48 bg-transparent"
+    >
+      <div className="max-w-6xl w-full flex flex-col relative z-20">
+        <p className="font-mono text-sm uppercase tracking-widest mb-4">Chapter 05 // System_Status: Ready</p>
         <motion.h2 
           className="text-6xl md:text-[8rem] font-black tracking-tighter mb-16 uppercase leading-[0.8]"
           onMouseEnter={() => setCursorVariant('hover')}
           onMouseLeave={() => setCursorVariant('default')}
         >
-          Initiate<br/>Contact
+          INITIATE <br/> CONTACT
         </motion.h2>
-        <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
+        
+        <div className="flex flex-col sm:flex-row gap-6 w-full max-w-3xl">
           <a 
             href="mailto:iddirugero@gmail.com"
-            onMouseEnter={() => setCursorVariant('hover')}
-            onMouseLeave={() => setCursorVariant('default')}
-            className="flex items-center justify-center gap-3 px-12 h-20 bg-black text-white hover:bg-gray-800 transition-colors font-bold min-w-[250px] text-xl rounded-none border border-black shadow-xl"
+            onMouseEnter={() => setCursorVariant('hover')} onMouseLeave={() => setCursorVariant('default')}
+            className="flex-1 flex items-center justify-center gap-3 h-24 bg-current text-white dark:text-black hover:opacity-80 transition-opacity font-black text-xl rounded-none shadow-2xl relative overflow-hidden group"
           >
+            <div className="absolute inset-0 bg-black mix-blend-difference opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             <Mail size={28} />
             iddirugero@gmail.com
           </a>
           <a 
-            href="https://linkedin.com/in/iddi-r-48a420142"
-            target="_blank"
-            rel="noopener noreferrer"
-            onMouseEnter={() => setCursorVariant('hover')}
-            onMouseLeave={() => setCursorVariant('default')}
-            className="flex items-center justify-center gap-3 px-12 h-20 border-4 border-black text-black hover:bg-gray-100 transition-colors font-bold min-w-[250px] text-xl rounded-none shadow-xl"
+            href="https://linkedin.com/in/iddi-r-48a420142" target="_blank" rel="noopener noreferrer"
+            onMouseEnter={() => setCursorVariant('hover')} onMouseLeave={() => setCursorVariant('default')}
+            className="flex-1 flex items-center justify-center gap-3 h-24 border-4 border-current hover:bg-current hover:text-white dark:hover:text-black transition-colors font-black text-xl rounded-none shadow-xl"
           >
             <Link size={28} />
             LinkedIn Profile
           </a>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
