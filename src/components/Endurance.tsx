@@ -78,11 +78,11 @@ export default function Endurance() {
       <div className="mb-24">
         <h4 className="font-mono text-xs text-[#00ffcc] uppercase tracking-widest mb-6 border-b border-[#00ffcc]/30 pb-2">The Volcanic Vector Array</h4>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <VolcanoCard name="KARISIMBI" height={4507} coord="01°30'S 29°27'E" image="/volcano-0.png" />
-          <VolcanoCard name="BISOKE" height={3711} coord="01°28'S 29°29'E" image="/volcano-1.png" />
-          <VolcanoCard name="MUHABURA" height={4127} coord="01°23'S 29°40'E" image="/volcano-2.png" />
-          <VolcanoCard name="GAHINGA" height={3474} coord="01°23'S 29°38'E" image="/volcano-3.png" />
-          <VolcanoCard name="SABYINYO" height={3669} coord="01°23'S 29°35'E" image="/volcano-4.png" />
+          <VolcanoCard name="KARISIMBI" height={4507} coord="01°30'S 29°27'E" image="./volcano-0.png" />
+          <VolcanoCard name="BISOKE" height={3711} coord="01°28'S 29°29'E" image="./volcano-1.png" />
+          <VolcanoCard name="MUHABURA" height={4127} coord="01°23'S 29°40'E" image="./volcano-2.png" />
+          <VolcanoCard name="GAHINGA" height={3474} coord="01°23'S 29°38'E" image="./volcano-3.png" />
+          <VolcanoCard name="SABYINYO" height={3669} coord="01°23'S 29°35'E" image="./volcano-4.png" />
         </div>
       </div>
 

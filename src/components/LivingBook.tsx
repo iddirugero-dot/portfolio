@@ -109,7 +109,7 @@ export default function LivingBook() {
             className="absolute inset-0 bg-[#e8e8e8] rounded-r-xl shadow-[20px_0_50px_rgba(0,0,0,0.5)] origin-left overflow-hidden z-10"
             style={{ backfaceVisibility: "hidden" }}
           >
-            <img src="/book.jpg" alt="97 Business Ideas Cover" className="w-full h-full object-cover absolute inset-0 z-20" onError={(e) => e.currentTarget.src = "/book.png"} />
+            <img src="./book.jpg" alt="97 Business Ideas Cover" className="w-full h-full object-cover absolute inset-0 z-20" onError={(e) => e.currentTarget.src = "./book.png"} />
           </motion.div>
 
           {/* Spine */}
