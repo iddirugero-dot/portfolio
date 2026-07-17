@@ -2,9 +2,186 @@
 @tailwind components;
 @tailwind utilities;
 
-body { 
-  background-color: #0a0a0a; 
-  margin: 0; 
-  font-family: system-ui, sans-serif; 
-  overflow-x: hidden; 
+@layer base {
+  :root {
+    --color-teal: #00ffcc;
+  }
+
+  body {
+    @apply bg-[#0a0a0a] text-gray-200;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    transition: background-color 0.1s ease, color 0.1s ease;
+  }
+  
+  @media (min-width: 768px) {
+    body {
+      cursor: none;
+    }
+    a, button {
+      cursor: none;
+    }
+  }
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Base Topo Pattern */
+.bg-topo {
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q 25 25 50 50 T 100 50' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3Cpath d='M0 80 Q 25 55 50 80 T 100 80' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3Cpath d='M0 20 Q 25 -5 50 20 T 100 20' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+.bg-topo-parallax {
+  transition: background-position 0.1s ease-out;
+}
+
+/* Typing Effect */
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: var(--color-teal);
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Sine Wave Float */
+@keyframes sine-wave {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0); }
+}
+
+.animate-sine-float-1 {
+  animation: sine-wave 4s ease-in-out infinite;
+}
+
+.animate-sine-float-2 {
+  animation: sine-wave 4.5s ease-in-out infinite 1s;
+}
+
+.animate-sine-float-3 {
+  animation: sine-wave 5s ease-in-out infinite 2s;
+}
+
+/* Teal Border Draw */
+.hover-draw-border {
+  position: relative;
+}
+
+.hover-draw-border::before,
+.hover-draw-border::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+.hover-draw-border::before {
+  top: 0;
+  left: 0;
+}
+
+.hover-draw-border::after {
+  bottom: 0;
+  right: 0;
+}
+
+.hover-draw-border:hover::before {
+  width: 100%;
+  height: 100%;
+  border-top-color: var(--color-teal);
+  border-right-color: var(--color-teal);
+  transition: width 0.15s ease-out, height 0.15s ease-out 0.15s;
+}
+
+.hover-draw-border:hover::after {
+  width: 100%;
+  height: 100%;
+  border-bottom-color: var(--color-teal);
+  border-left-color: var(--color-teal);
+  transition: border-color 0s ease-out 0.3s, width 0.15s ease-out 0.3s, height 0.15s ease-out 0.45s;
+}
+
+/* Terminal Aesthetics */
+.scanline-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline-hover::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 10;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.scanline-hover:hover::before {
+  opacity: 1;
+}
+
+.glitch-hover {
+  transition: transform 0.1s ease;
+}
+
+.glitch-hover:hover {
+  transform: translate(-1px, 1px);
+  text-shadow: 2px 0 var(--color-teal), -2px 0 #ff00ff;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 255, 204, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes flash-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.animate-flash-green {
+  animation: flash-green 1s step-end infinite;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .glitch-hover:hover {
+    transform: none;
+    text-shadow: none;
+    color: var(--color-teal);
+  }
 }
